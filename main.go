@@ -1,21 +1,43 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"net/http"
 	"os"
 
+	chi "github.com/go-chi/chi"
+	cors "github.com/go-chi/cors"
 	godotenv "github.com/joho/godotenv"
 )
 
 func main() {
-	fmt.Println("hello world")
-
 	godotenv.Load()
 
 	portString := os.Getenv("PORT")
 	if portString == "" {
 		log.Fatal("PORT is not found in the env")
 	}
-	fmt.Println("port: ", portString)
+
+	router := chi.NewRouter()
+
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"https://*", "http://*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+		ExposedHeaders: []string{"Link"},
+		AllowCredentials: false,
+		MaxAge: 300,
+	}))
+
+	server := &http.Server{
+		Handler: router,
+		Addr: ":" + portString,
+	}
+
+	log.Printf("Server starting on port %v", portString)
+
+	err := server.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
